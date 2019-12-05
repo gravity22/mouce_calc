@@ -1,2 +1,2 @@
-# mouce_calc
+# mouse_calc
 data analysis
