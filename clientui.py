@@ -2,6 +2,10 @@ import sys
 from io import BytesIO, StringIO
 from io import TextIOWrapper
 from datetime import timedelta
+from collections import OrderedDict
+import hashlib
+import threading
+import enum
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -192,7 +196,6 @@ class CalcOptionEditWidget(QWidget):
         self.option_value = self.init_option_value
 
 
-
 class GraphViewWidget(FigureCanvas):
     press = None
     translationInitSignal = pyqtSignal()
@@ -299,6 +302,14 @@ class GraphViewWidget(FigureCanvas):
             self.axes.legend()
         self.artists.append(scatter)
 
+    def barh(self, y, width, height=0.8, left=None, align='center'):
+        barh = self.axes.barh(y, width, height=height)
+        self.artists.append(barh)
+
+    def yticks(self, tick, label):
+        self.axes.set_yticks(tick)
+        self.axes.set_yticklabels(label)
+
     def getXlim(self):
         return self.axes.get_xlim()
 
@@ -356,11 +367,13 @@ class GraphViewWidget(FigureCanvas):
 
 
 class GraphPageWidget(QWidget):
-    def __init__(self, parent, page_name, x_data, y_data, config={}, graphoptions={}):
+    def __init__(self, parent, page_name, data_id, config={}, graphoptions={}):
         super().__init__(parent=parent)
         self.parentwidget = parent
         self.threadpool = QThreadPool()
+        self.graphoptions = graphoptions
 
+        self.data_id = data_id
         self.config = config
         self.datas = []
         self.xlim = None
@@ -370,8 +383,6 @@ class GraphPageWidget(QWidget):
         self.history_index = -1
         self.limhistory = []
         self.require_updategraph = False
-
-        self.appendData(x_data, y_data, "data", graphoptions)
 
         self.toolbar = QToolBar()
         self.inner_layout = QHBoxLayout()
@@ -407,8 +418,6 @@ class GraphPageWidget(QWidget):
         self.toolbar_next_action.triggered.connect(self.nextLimHistory)
         self.toolbar_reset_action.triggered.connect(self.resetLim)
 
-        self.updateGraph()
-
     def appendData(self, x, y, name, options={}):
         self.require_updategraph = True
         self.datas.append((name, x, y, options))
@@ -425,14 +434,15 @@ class GraphPageWidget(QWidget):
                     self.graphViewWidget.plot(x, y, label=name, twinx=twinx)
             self.require_updategraph = False
 
-        if self.xlim:
-            self.graphViewWidget.setXlim(self.xlim)
-        else:
+        if self.xlim is None:
             self.xlim = self.graphViewWidget.getXlim()
-        if self.ylim:
-            self.graphViewWidget.setYlim(self.ylim)
         else:
+            self.graphViewWidget.setXlim(self.xlim)
+
+        if self.ylim is None:
             self.ylim = self.graphViewWidget.getYlim()
+        else:
+            self.graphViewWidget.setYlim(self.ylim)
 
         self.graphViewWidget.draw()
 
@@ -514,7 +524,6 @@ class GraphPageWidget(QWidget):
 
     def callCalcProcess(self, option):
         worker = Worker(self.calcProcess, option)
-        #worker.signals.result.connect(self.tempGraphShow)
         self.threadpool.start(worker)
 
     def calcProcess(self, option, progress_callback):
@@ -524,14 +533,18 @@ class GraphPageWidget(QWidget):
 class MaxTemperatureGraphPageWidget(GraphPageWidget):
     counter = 1
 
-    def __init__(self, parent, page_name, data, config=None):
+    def __init__(self, parent, page_name, data_id, data, config=None):
+        self.data = data
+        super().__init__(parent, page_name, data_id, config)
+
+        data = DataManager.get_data(self.data_id)
         x_data = data.get_col(TIME)
         y_data = data.get_col(MAX_TEMPERATURE)
-        super().__init__(parent, page_name, x_data, y_data, config)
-        self.data = data
+        self.appendData(x_data, y_data, "data", self.graphoptions)
+
+        x_data = self.data.get_col(TIME) 
         self.xlim = (min(x_data), max(x_data))
         self.updateGraph()
-        self.ylim = self.graphViewWidget.getYlim()
 
     def calcProcess(self, option, progress_callback):
         bg_time_init = option["bg_time_init"]
@@ -540,25 +553,28 @@ class MaxTemperatureGraphPageWidget(GraphPageWidget):
         tg_time_end = option["tg_time_end"]
         step_size = option["step_size"]
         thres_sd_heat = option["thres_sd_heat"]
+        label = "error" + str(self.counter)
+
         error_data, _ = temperature_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, thres_sd_heat=thres_sd_heat, save_svg=False, show_graph=False)
+        DataManager.append_error(self.data_id, ErrorType.MAX_TEMPERATURE_ERROR, error_data, option)
+
         x = error_data.get_col(TIME)
         y = error_data.get_col(TEMPERATURE_ERROR_DATA)
-        label = "error" + str(self.counter)
         self.appendData(x, y, label, {"twinx": True})
-        self.counter += 1
         self.updateGraph()
+        self.counter += 1
 
 
 class MinTemperatureGraphPageWidget(GraphPageWidget):
     counter = 1
-    def __init__(self, parent, page_name, data, config=None):
+    def __init__(self, parent, page_name, data_id, data, config=None):
+        self.data = data
+        super().__init__(parent, page_name, data_id, config)
+
         x_data = data.get_col(TIME)
         y_data = data.get_col(MIN_TEMPERATURE)
-        super().__init__(parent, page_name, x_data, y_data, config)
-        self.data = data
-        self.xlim = (min(x_data), max(x_data))
+        self.appendData(x_data, y_data, "data", self.graphoptions)
         self.updateGraph()
-        self.ylim = self.graphViewWidget.getYlim()
 
     def calcProcess(self, option, progress_callback):
         bg_time_init = option["bg_time_init"]
@@ -567,25 +583,28 @@ class MinTemperatureGraphPageWidget(GraphPageWidget):
         tg_time_end = option["tg_time_end"]
         step_size = option["step_size"]
         thres_sd_heat = option["thres_sd_heat"]
+        label = "error" + str(self.counter)
+
         error_data, _ = temperature_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, thres_sd_heat=thres_sd_heat, save_svg=False, show_graph=False)
+        DataManager.append_error(self.data_id, ErrorType.MIN_TEMPERATURE_ERROR, error_data, option)
+
         x = error_data.get_col(TIME)
         y = error_data.get_col(TEMPERATURE_ERROR_DATA)
-        label = "error" + str(self.counter)
         self.appendData(x, y, label, {"twinx": True})
-        self.counter += 1
         self.updateGraph()
+        self.counter += 1
 
 
 class DistanceGraphPageWidget(GraphPageWidget):
     counter = 1
-    def __init__(self, parent, page_name, data, config=None):
+    def __init__(self, parent, page_name, data_id, data, config=None):
+        self.data = data
+        super().__init__(parent, page_name, data_id, config)
+
         x_data = data.get_col(TIME)
         y_data = data.get_col(DISTANCE)
-        super().__init__(parent, page_name, x_data, y_data, config)
-        self.data = data
-        self.xlim = (min(x_data), max(x_data))
+        self.appendData(x_data, y_data, "data", self.graphoptions)
         self.updateGraph()
-        self.ylim = self.graphViewWidget.getYlim()
 
     def calcProcess(self, option, progress_callback):
         bg_time_init = option["bg_time_init"]
@@ -594,10 +613,13 @@ class DistanceGraphPageWidget(GraphPageWidget):
         tg_time_end = option["tg_time_end"]
         step_size = option["step_size"]
         welch_thres = option["welch_thres"]
+        label = "error" + str(self.counter)
+
         error_data, _ = distance_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, save_svg=False, show_graph=False, welch_thres=welch_thres)
+        DataManager.append_error(self.data_id, ErrorType.DISTANCE_ERROR, error_data, option)
+
         x = error_data.get_col(TIME)
         y = error_data.get_col(ERROR_VALUE)
-        label = "error" + str(self.counter)
         self.appendData(x, y, label, {"twinx": True})
         self.counter += 1
         self.updateGraph()
@@ -607,15 +629,14 @@ class CorGraphPageWidget(GraphPageWidget):
     counter = 1
     addpageSignal = pyqtSignal(object)
 
-    def __init__(self, parent, page_name, data, config=None):
+    def __init__(self, parent, page_name, data_id, data, config=None):
+        super().__init__(parent, page_name, data_id, config, {"graphtype": "scatter"})
         self.data = data
         self.window_data = window_process(self.data, 8)
         x_data = np.log2(self.window_data.get_col(DISTANCE_MEAN))
         y_data = self.window_data.get_col(MAX_TEMPERATURE_MEAN)
-        super().__init__(parent, page_name, x_data, y_data, config, {"graphtype": "scatter"})
+        self.appendData(x_data, y_data, 'data', self.graphoptions)
         self.updateGraph()
-        self.ylim = self.graphViewWidget.getYlim()
-        self.graphViewWidget.modechange("zoom")
 
     def calcProcess(self, option, progress_callback):
         bg_time_init = option["bg_time_init"]
@@ -626,6 +647,7 @@ class CorGraphPageWidget(GraphPageWidget):
         sd_num = option["sd_num"]
         error_step = option["error_step"]
         error_data, pb_info = cor_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, SD_NUM=sd_num, ERROR_STEP=error_step, save_svg=False, show_graph=False)
+        DataManager.append_error(self.data_id, ErrorType.COR_ERROR, error_data, option)
 
         slope = pb_info["slope"]
         n = pb_info["n"]
@@ -661,6 +683,7 @@ class GraphWidget(QTabWidget):
     def __init__(self, data, configs):
         super().__init__()
         self.data = data
+        self.data_id = DataManager.new(self.data)
 
         if configs["temperature_timerange_predict"] or configs["distance_timerange_predict"] or configs["cor_timerange_predict"]:
             time_data = data.get_col(TIME)
@@ -675,11 +698,13 @@ class GraphWidget(QTabWidget):
             temperature_config["tg_time_init"] = median_time
             temperature_config["tg_time_end"] = max_time
 
-        maxTemperaturePage = MaxTemperatureGraphPageWidget(self, "max temperature", self.data, temperature_config)
+        maxTemperaturePage = MaxTemperatureGraphPageWidget(self, "max temperature", self.data_id, self.data, temperature_config)
         self.addTab(maxTemperaturePage, "max temperature")
 
-        minTemperaturePage = MinTemperatureGraphPageWidget(self, "min temperature", self.data, temperature_config)
+        """
+        minTemperaturePage = MinTemperatureGraphPageWidget(self, "min temperature", self.data_id, self.data, temperature_config)
         self.addTab(minTemperaturePage, "min temperature")
+        """
 
         distance_config = configs["distance"]
         if configs["distance_timerange_predict"]:
@@ -687,7 +712,7 @@ class GraphWidget(QTabWidget):
             distance_config["bg_time_end"] = median_time
             distance_config["tg_time_init"] = median_time
             distance_config["tg_time_end"] = max_time
-        temperaturePage = DistanceGraphPageWidget(self, "distance", self.data, distance_config)
+        temperaturePage = DistanceGraphPageWidget(self, "distance", self.data_id, self.data, distance_config)
         self.addTab(temperaturePage, "distance")
 
         cor_config = configs["cor"]
@@ -696,7 +721,7 @@ class GraphWidget(QTabWidget):
             cor_config["bg_time_end"] = median_time
             cor_config["tg_time_init"] = median_time
             cor_config["tg_time_end"] = max_time
-        temperaturePage = CorGraphPageWidget(self, "cor", self.data, cor_config)
+        temperaturePage = CorGraphPageWidget(self, "cor", self.data_id, self.data, cor_config)
         temperaturePage.addpageSignal.connect(self.addtab)
         self.addTab(temperaturePage, "cor")
 
@@ -704,8 +729,11 @@ class GraphWidget(QTabWidget):
         x_data = obj["x_data"]
         y_data = obj["y_data"]
         name = obj["name"]
-        widget = GraphPageWidget(self, name, x_data, y_data)
+        widget = GraphPageWidget(self, name, self.data_id)
+        widget.appendData(x_data, y_data, name)
+        widget.updateGraph()
         self.addTab(widget, name)
+
 
 class LoadInfoWidget(QWidget):
     temperature_widgets = {}
@@ -956,10 +984,6 @@ class LoadInfoWidget(QWidget):
         self.innerLayout.addLayout(hbox, 2, 0)
 
 
-class LoadOptionWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-
 class LoadWidget(QWidget):
     targetpath = ""
     loadSignal = pyqtSignal(object)
@@ -1002,10 +1026,8 @@ class LoadWidget(QWidget):
         self.innerLayout = QHBoxLayout()
         self.setLayout(self.innerLayout)
         self.loadInfoWidget = LoadInfoWidget(self.configs)
-        self.loadOptionWidget = LoadOptionWidget()
 
         self.innerLayout.addWidget(self.loadInfoWidget, 4)
-        self.innerLayout.addWidget(self.loadOptionWidget, 1)
 
         self.loadInfoWidget.loadButton.clicked.connect(parent.openFile)
 
@@ -1069,30 +1091,294 @@ class FileListWidget(QDockWidget):
         self.listwidget.addItem(item)
 
 
-class DataItem(QListWidgetItem):
-    def __init__(self, name, data_type, data, path=None):
-        super().__init__(name)
-        self.name = name
-        self.data_type = data_type
-        self.data_ = data
-        self.path = path
+@enum.unique
+class DataType(enum.Enum):
+    RAWDATA = enum.auto()
+    ERROR = enum.auto()
+    CACHE = enum.auto()
+    CONFIG = enum.auto()
+
+@enum.unique
+class ErrorType(enum.Enum):
+    MAX_TEMPERATURE_ERROR = enum.auto()
+    MIN_TEMPERATURE_ERROR = enum.auto()
+    DISTANCE_ERROR = enum.auto()
+    COR_ERROR = enum.auto()
+    SUM_ERROR = enum.auto()
 
 
-class DataListWidget(QWidget):
-    data_list = {}
-    def __init__(self, name=None):
-        super().__init__(name)
-        self.listWidget = QListWidget()
+class ErrorItem(object):
+    def __init__(self, error_id, error_type, error_data, error_config):
+        self.id = error_id
+        self.type = error_type
+        self.data = error_data
+        self.config = error_config
 
-    def appendData(self, name, data, path=None):
-        item = DataCache(name, "DATA", data, path=path)
-        data_list.append(item)
-        self.append(item)
 
-    def appendCache(self, name, data):
-        item = DataCache(name, "DATA", data, path=path)
-        data_list.append(item)
-        self.append(item)
+class DataItem(object):
+    def __init__(self, data_id, data, option={}):
+        self.id = data_id
+        self.data = data
+        self.option = option
+        self.errors = []
+        self.__error_id_counter = 0
+        self.max_temperature_rep_error_id = None
+        self.min_temperature_rep_error_id = None
+        self.cor_rep_error_id = None
+        self.distance_rep_error_id = None
+
+    def append_error(self, error_type, error_data, error_config):
+        error_id = self.__error_id_counter
+        self.__error_id_counter += 1
+
+        error_item = ErrorItem(error_id, error_type, error_data, error_config)
+        self.errors.append(error_item)
+
+        if error_type is ErrorType.MAX_TEMPERATURE_ERROR:
+            self.max_temperature_rep_error_id = error_item.id
+        elif error_type is ErrorType.MIN_TEMPERATURE_ERROR:
+            self.min_temperature_rep_error_id = error_item.id
+        elif error_type is ErrorType.DISTANCE_ERROR:
+            self.distance_rep_error_id = error_item.id
+        elif error_type is ErrorType.COR_ERROR:
+            self.cor_rep_error_id = error_item.id
+        else:
+            raise
+
+        return error_id
+
+    def query_error_type(self, query):
+        if type(query) is not ErrorType:
+            raise
+        for error in self.errors:
+            if error.type is query:
+                yield error
+
+    def get(self, error_id):
+        return self.errors[error_id]
+
+    def get_reps(self):
+        ret = {}
+        ret["max_temperature"] = self.get(self.max_temperature_rep_error_id) if self.max_temperature_rep_error_id else None
+        ret["min_temperature"] = self.get(self.min_temperature_rep_error_id) if self.min_temperature_rep_error_id else None
+        ret["distance"] = self.get(self.distance_rep_error_id) if self.distance_rep_error_id else None
+        ret["cor"] = self.get(self.cor_rep_error_id) if self.cor_rep_error_id else None
+        return ret
+
+
+class DataManager(object):
+    __instance = None
+    _lock = threading.Lock()
+    __id_counter = 0
+    
+    def __new__(cls):
+        raise
+
+    @classmethod
+    def __private_init__(cls, self):
+        self.datas = []
+        self.__active_data = None
+        return self
+
+    @classmethod
+    def __private_new__(cls):
+        return cls.__private_init__(super().__new__(cls))
+
+    @classmethod
+    def get_instance(cls):
+        with cls._lock:
+            if cls.__instance is None:
+                cls.__instance = cls.__private_new__()
+        return cls.__instance
+
+    @classmethod
+    def new(cls, data):
+        data_id = cls.__id_counter
+        cls.__id_counter += 1
+
+        dm = cls.get_instance()
+        item = DataItem(data_id, data) 
+        dm.__append(item)
+        dm.__activeted(data_id)
+        return data_id
+
+    @classmethod
+    def get(cls, data_id):
+        dm = cls.get_instance()
+        return dm.__get(data_id)
+
+    @classmethod
+    def get_data(cls, data_id):
+        dm = cls.get_instance()
+        item = dm.__get(data_id)
+        return item.data
+
+    @classmethod
+    def set(cls, data_id, data):
+        raise
+
+    @classmethod
+    def append_error(cls, data_id, error_type, error_data, error_config):
+        dm = cls.get_instance()
+        data = dm.__get(data_id)
+        return data.append_error(error_type, error_data, error_config)
+
+    @classmethod
+    def all(cls):
+        dm = cls.get_instance()
+        for item in dm.__all():
+            yield item
+
+    @classmethod
+    def filter(cls, query):
+        raise
+
+    def __append(self, item):
+        self.datas.append(item)
+
+    def __get(self, data_id):
+        for item in self.datas:
+            if item.id == data_id:
+                return item
+        return None
+
+    def __all(self):
+        for item in self.datas:
+            yield item
+
+    def __activeted(self, data_id):
+        self.__active_data = data_id
+
+
+class DataListWidget(QListWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        for item in DataManager.all():
+            self.addItem(str(item.id))
+            for error in item.errors:
+                self.addItem(str(error.id))
+
+
+class StatisticsWidget(QWidget):
+    def __init__(self, parent=None, datatype=None):
+        super().__init__(parent)
+        self.inner_layout = QHBoxLayout()
+        self.setLayout(self.inner_layout)
+
+        self.graphViewWidget = GraphViewWidget()
+        self.inner_layout.addWidget(self.graphViewWidget)
+
+        if datatype is ErrorType.MAX_TEMPERATURE_ERROR:
+            self.max_temperature_error_draw()
+        elif datatype is ErrorType.MIN_TEMPERATURE_ERROR:
+            self.min_temperature_error_draw()
+        elif datatype is ErrorType.DISTANCE_ERROR:
+            self.distance_error_draw()
+        elif datatype is ErrorType.COR_ERROR:
+            self.cor_error_draw()
+        elif datatype is ErrorType.SUM_ERROR:
+            self.sum_error_draw()
+
+    def max_temperature_error_draw(self):
+        counters = []
+        for dataitem in DataManager.all():
+            name = 'data' + str(dataitem.id)
+            for error in dataitem.errors:
+                if error.type is ErrorType.MAX_TEMPERATURE_ERROR:
+                    d = error.data.get_col(TEMPERATURE_ERROR_DATA)
+                    d_bool = (d>0)
+                    count = sum(d_bool)
+                    counters.append(count)
+
+        index = list(range(len(counters)))
+        self.graphViewWidget.barh(index, counters)
+        self.graphViewWidget.yticks(index, list(map(lambda x: 'error'+str(x), index)))
+        self.graphViewWidget.draw()
+
+    def min_temperature_error_draw(self):
+        counters = []
+        for dataitem in DataManager.all():
+            name = 'data' + str(dataitem.id)
+            for error in dataitem.errors:
+                if error.type is ErrorType.MIN_TEMPERATURE_ERROR:
+                    d = error.data.get_col(TEMPERATURE_ERROR_DATA)
+                    d_bool = (d>0)
+                    count = sum(d_bool)
+                    counters.append(count)
+
+        index = list(range(len(counters)))
+        self.graphViewWidget.barh(index, counters)
+        self.graphViewWidget.yticks(index, list(map(lambda x: 'error'+str(x), index)))
+        self.graphViewWidget.draw()
+
+    def distance_error_draw(self):
+        counters = []
+        for dataitem in DataManager.all():
+            name = 'data' + str(dataitem.id)
+            for error in dataitem.errors:
+                if error.type is ErrorType.DISTANCE_ERROR:
+                    d = error.data.get_col(ERROR_VALUE)
+                    d_bool = (d>0)
+                    count = sum(d_bool)
+                    counters.append(count)
+
+        index = list(range(len(counters)))
+        self.graphViewWidget.barh(index, counters)
+        self.graphViewWidget.yticks(index, list(map(lambda x: 'error'+str(x), index)))
+        self.graphViewWidget.draw()
+
+    def cor_error_draw(self):
+        counters = []
+        for dataitem in DataManager.all():
+            name = 'data' + str(dataitem.id)
+            for error in dataitem.errors:
+                if error.type is ErrorType.COR_ERROR:
+                    d = error.data.get_col(COR_ERROR_VALUE)
+                    d_bool = (d>0)
+                    count = sum(d_bool)
+                    counters.append(count)
+
+        index = list(range(len(counters)))
+        self.graphViewWidget.barh(index, counters)
+        self.graphViewWidget.yticks(index, list(map(lambda x: 'error'+str(x), index)))
+        self.graphViewWidget.draw()
+
+    def sum_error_draw(self):
+        datas = {}
+        for dataitem in DataManager.all():
+            graphdata = OrderedDict()
+            name = "data" + str(dataitem.id)
+            reps = dataitem.get_reps()
+            print(reps, file=sys.stderr)
+            if reps['max_temperature']:
+                d = reps['max_temperature'].data.get_col(TEMPERATURE_ERROR_DATA)
+                d_bool = (d>0)
+                count = sum(d_bool)
+                graphdata["max_temperature"] = count
+            if reps['min_temperature']:
+                d = reps['min_temperature'].data.get_col(TEMPERATURE_ERROR_DATA)
+                d_bool = (d>0)
+                count = sum(d_bool)
+                graphdata["min_temperature"] = count
+            if reps['distance']:
+                d = reps['distance'].data.get_col(ERROR_VALUE)
+                d_bool = (d>0)
+                count = sum(d_bool)
+                graphdata["distance"] = count
+            if reps['cor']:
+                d = reps['cor'].data.get_col(COR_ERROR_VALUE)
+                d_bool = (d>0)
+                count = sum(d_bool)
+                graphdata['cor'] = count
+            datas[name] = (graphdata)
+
+        for name, grpahdaa in datas.items():
+            labels = list(map(lambda k: name+k, graphdata.keys()))
+            values = graphdata.values()
+            index = list(range(len(values)))
+            self.graphViewWidget.barh(index, values)
+            self.graphViewWidget.yticks(index, labels)
+        self.graphViewWidget.draw()
 
 
 class MainWidget(QStackedWidget):
@@ -1104,8 +1390,6 @@ class MainWidget(QStackedWidget):
 
         self.loadWidget = LoadWidget(self)
         self.loadWidget.loadSignal.connect(self.makeGraph)
-
-        self.dataWidget = DataListWidget()
 
         self.addWidget(self.loadWidget)
         self.loadWidgetIndex = self.currentIndex()
@@ -1174,6 +1458,30 @@ class MainWindow(QMainWindow):
             self.mainWidget.newwidget_signal.connect(self.addNewWidget)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.filelistWidget)
 
+    def openDMWidget(self):
+        self.dmwidget = DataListWidget()
+        self.dmwidget.show()
+
+    def openMaxTemperatureStatisticsWidget(self):
+        self.statisticswidget = StatisticsWidget(datatype=ErrorType.MAX_TEMPERATURE_ERROR)
+        self.statisticswidget.show()
+
+    def openMinTemperatureStatisticsWidget(self):
+        self.statisticswidget = StatisticsWidget(datatype=ErrorType.MIN_TEMPERATURE_ERROR)
+        self.statisticswidget.show()
+
+    def openDistanceStatisticsWidget(self):
+        self.statisticswidget = StatisticsWidget(datatype=ErrorType.DISTANCE_ERROR)
+        self.statisticswidget.show()
+
+    def openCorStatisticsWidget(self):
+        self.statisticswidget = StatisticsWidget(datatype=ErrorType.COR_ERROR)
+        self.statisticswidget.show()
+
+    def openSumStatisticsWidget(self):
+        self.statisticswidget = StatisticsWidget(datatype=ErrorType.SUM_ERROR)
+        self.statisticswidget.show()
+
     def addNewWidget(self, obj):
         filename = obj["filename"]
         self.filelistWidget.append(filename)
@@ -1225,10 +1533,42 @@ class MainWindow(QMainWindow):
         openFileListWidgetAction.setStatusTip("Open filelist view")
         openFileListWidgetAction.triggered.connect(self.openFileListWidget)
 
+        openDMWidgetOpenAction = QAction('Data manager', self)
+        openDMWidgetOpenAction.setStatusTip("Open Data Manager")
+        openDMWidgetOpenAction.triggered.connect(self.openDMWidget)
+
         windowMenu = menubar.addMenu('Window')
         windowMenu.addAction(openLoadWidgetAction)
         windowMenu.addAction(openDebugConsoleAction)
         windowMenu.addAction(openFileListWidgetAction)
+        windowMenu.addAction(openDMWidgetOpenAction)
+
+        openMaxTemperatureStatisticsWidgetAction = QAction('max temperature statistics', self)
+        openMaxTemperatureStatisticsWidgetAction.setStatusTip("Open statistics")
+        openMaxTemperatureStatisticsWidgetAction.triggered.connect(self.openMaxTemperatureStatisticsWidget)
+
+        openMinTemperatureStatisticsWidgetAction = QAction('min temperature statistics', self)
+        openMinTemperatureStatisticsWidgetAction.setStatusTip("Open statistics")
+        openMinTemperatureStatisticsWidgetAction.triggered.connect(self.openMinTemperatureStatisticsWidget)
+
+        openDistanceStatisticsWidgetAction = QAction('distance statistics', self)
+        openDistanceStatisticsWidgetAction.setStatusTip("Open statistics")
+        openDistanceStatisticsWidgetAction.triggered.connect(self.openDistanceStatisticsWidget)
+
+        openCorStatisticsWidgetAction = QAction('cor statistics', self)
+        openCorStatisticsWidgetAction.setStatusTip("Open statistics")
+        openCorStatisticsWidgetAction.triggered.connect(self.openCorStatisticsWidget)
+
+        openSumStatisticsWidgetAction = QAction('sum statistics', self)
+        openSumStatisticsWidgetAction.setStatusTip("Open statistics")
+        openSumStatisticsWidgetAction.triggered.connect(self.openSumStatisticsWidget)
+
+        statisticsMenu = menubar.addMenu('Statistics')
+        statisticsMenu.addAction(openMaxTemperatureStatisticsWidgetAction)
+        statisticsMenu.addAction(openMinTemperatureStatisticsWidgetAction)
+        statisticsMenu.addAction(openDistanceStatisticsWidgetAction)
+        statisticsMenu.addAction(openCorStatisticsWidgetAction)
+        statisticsMenu.addAction(openSumStatisticsWidgetAction)
 
     def selectedFile(self, item):
         item = item.text()
