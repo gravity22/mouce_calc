@@ -6,6 +6,7 @@ from collections import OrderedDict
 import hashlib
 import threading
 import enum
+import multiprocessing
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -555,7 +556,13 @@ class MaxTemperatureGraphPageWidget(GraphPageWidget):
         thres_sd_heat = option["thres_sd_heat"]
         label = "error" + str(self.counter)
 
-        error_data, _ = temperature_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, thres_sd_heat=thres_sd_heat, save_svg=False, show_graph=False)
+        q = multiprocessing.Queue()
+        f = lambda: q.put(temperature_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, thres_sd_heat=thres_sd_heat, save_svg=False, show_graph=False))
+        p = multiprocessing.Process(target=f)
+        p.start()
+        error_data, _ = q.get()
+        p.join()
+
         DataManager.append_error(self.data_id, ErrorType.MAX_TEMPERATURE_ERROR, error_data, option)
 
         x = error_data.get_col(TIME)
@@ -585,7 +592,12 @@ class MinTemperatureGraphPageWidget(GraphPageWidget):
         thres_sd_heat = option["thres_sd_heat"]
         label = "error" + str(self.counter)
 
-        error_data, _ = temperature_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, thres_sd_heat=thres_sd_heat, save_svg=False, show_graph=False)
+        q = multiprocessing.Queue()
+        f = lambda: q.put(temperature_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, thres_sd_heat=thres_sd_heat, save_svg=False, show_graph=False))
+        p.start()
+        error_data, _ = q.get()
+        p.join()
+
         DataManager.append_error(self.data_id, ErrorType.MIN_TEMPERATURE_ERROR, error_data, option)
 
         x = error_data.get_col(TIME)
@@ -615,7 +627,13 @@ class DistanceGraphPageWidget(GraphPageWidget):
         welch_thres = option["welch_thres"]
         label = "error" + str(self.counter)
 
-        error_data, _ = distance_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, save_svg=False, show_graph=False, welch_thres=welch_thres)
+        q = multiprocessing.Queue()
+        f = lambda: q.put(distance_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, save_svg=False, show_graph=False, welch_thres=welch_thres))
+        p = multiprocessing.Process(target=f)
+        p.start()
+        error_data, _ = q.get()
+        p.join()
+
         DataManager.append_error(self.data_id, ErrorType.DISTANCE_ERROR, error_data, option)
 
         x = error_data.get_col(TIME)
@@ -646,7 +664,14 @@ class CorGraphPageWidget(GraphPageWidget):
         step_size = option["step_size"]
         sd_num = option["sd_num"]
         error_step = option["error_step"]
-        error_data, pb_info = cor_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, SD_NUM=sd_num, ERROR_STEP=error_step, save_svg=False, show_graph=False)
+
+        q = multiprocessing.Queue()
+        f = lambda: q.put(cor_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, SD_NUM=sd_num, ERROR_STEP=error_step, save_svg=False, show_graph=False))
+        p = multiprocessing.Process(target=f)
+        p.start()
+        error_data, pb_info = q.get()
+        p.join()
+
         DataManager.append_error(self.data_id, ErrorType.COR_ERROR, error_data, option)
 
         slope = pb_info["slope"]
