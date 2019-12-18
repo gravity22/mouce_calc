@@ -650,6 +650,11 @@ class CorGraphPageWidget(GraphPageWidget):
     def __init__(self, parent, page_name, data_id, data, config=None):
         super().__init__(parent, page_name, data_id, config, {"graphtype": "scatter"})
         self.data = data
+
+        worker = Worker(self.initProcess)
+        self.threadpool.start(worker)
+
+    def initProcess(self, progress_callback):
         self.window_data = window_process(self.data, 8)
         x_data = np.log2(self.window_data.get_col(DISTANCE_MEAN))
         y_data = self.window_data.get_col(MAX_TEMPERATURE_MEAN)
