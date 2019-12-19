@@ -6,46 +6,17 @@ from PyQt5.QtQuick import *
 
 from mouse_calc.lib import *
 from mouse_calc.ui.loadinfowidget import LoadInfoWidget
+from mouse_calc.ui.configmanager import ConfigManager
 
 
 class LoadWidget(QWidget):
     targetpath = ""
     loadSignal = pyqtSignal(object)
 
-    default_config = {
-        "temperature": {
-            "bg_time_init": datetime.datetime.now(),
-            "bg_time_end": datetime.datetime.now(),
-            "tg_time_init": datetime.datetime.now(),
-            "tg_time_end": datetime.datetime.now(),
-            "step_size": 8,
-            "thres_sd_heat": 1.5,
-        },
-        "distance": {
-            "bg_time_init": datetime.datetime.now(),
-            "bg_time_end": datetime.datetime.now(),
-            "tg_time_init": datetime.datetime.now(),
-            "tg_time_end": datetime.datetime.now(),
-            "step_size": 8,
-            "welch_thres": 0.5,
-        },
-        "cor": {
-            "bg_time_init": datetime.datetime.now(),
-            "bg_time_end": datetime.datetime.now(),
-            "tg_time_init": datetime.datetime.now(),
-            "tg_time_end": datetime.datetime.now(),
-            "step_size": 8,
-            "error_step": 1,
-            "sd_num": 1.5
-        },
-        "temperature_timerange_predict": False,
-        "distance_timerange_predict": False,
-        "cor_timerange_predict": False,
-    }
-
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.configs = self.default_config
+        self.config_id = ConfigManager.default()
+        self.configs = ConfigManager.get(self.config_id)
 
         self.innerLayout = QHBoxLayout()
         self.setLayout(self.innerLayout)
@@ -89,11 +60,8 @@ class LoadWidget(QWidget):
         datas = {}
         datas["datapath"] = self.targetpath
         datas["configs"] = self.configs
+        datas["config_id"] = self.config_id
         self.loadSignal.emit(datas)
-
-    def changeTargetPath(self, item):
-        self.loadInfoWidget.targetPathLabel.setText(item)
-        self.targetpath = item
 
     def openFile(self):
         (filename, kakutyousi) = QFileDialog.getOpenFileName(self, "Open CSV file", "./", "CSV files (*.csv)")

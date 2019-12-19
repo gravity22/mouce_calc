@@ -14,13 +14,16 @@ from mouse_calc.ui.maxtemperaturegraphpagewidget import  MaxTemperatureGraphPage
 from mouse_calc.ui.mintemperaturegraphpagewidget import  MinTemperatureGraphPageWidget
 from mouse_calc.ui.distancegraphpagewidget import DistanceGraphPageWidget
 from mouse_calc.ui.corgraphpagewidget import CorGraphPageWidget
+from mouse_calc.ui.configmanager import ConfigManager
 
 
 class GraphWidget(QTabWidget):
-    def __init__(self, data, configs):
+    def __init__(self, data, config_id):
         super().__init__()
         self.data = data
         self.data_id = DataManager.new(self.data)
+        self.config_id = config_id
+        configs = ConfigManager.get(config_id)
 
         if configs["temperature_timerange_predict"] or configs["distance_timerange_predict"] or configs["cor_timerange_predict"]:
             time_data = data.get_col(TIME)
@@ -35,22 +38,12 @@ class GraphWidget(QTabWidget):
             temperature_config["tg_time_init"] = median_time
             temperature_config["tg_time_end"] = max_time
 
-        maxTemperaturePage = MaxTemperatureGraphPageWidget(self, "max temperature", self.data_id, self.data, temperature_config)
-        self.addTab(maxTemperaturePage, "max temperature")
-
-        """
-        minTemperaturePage = MinTemperatureGraphPageWidget(self, "min temperature", self.data_id, self.data, temperature_config)
-        self.addTab(minTemperaturePage, "min temperature")
-        """
-
         distance_config = configs["distance"]
         if configs["distance_timerange_predict"]:
             distance_config["bg_time_init"] = min_time
             distance_config["bg_time_end"] = median_time
             distance_config["tg_time_init"] = median_time
             distance_config["tg_time_end"] = max_time
-        temperaturePage = DistanceGraphPageWidget(self, "distance", self.data_id, self.data, distance_config)
-        self.addTab(temperaturePage, "distance")
 
         cor_config = configs["cor"]
         if configs["cor_timerange_predict"]:
@@ -58,15 +51,27 @@ class GraphWidget(QTabWidget):
             cor_config["bg_time_end"] = median_time
             cor_config["tg_time_init"] = median_time
             cor_config["tg_time_end"] = max_time
-        temperaturePage = CorGraphPageWidget(self, "cor", self.data_id, self.data, cor_config)
-        temperaturePage.addpageSignal.connect(self.addtab)
-        self.addTab(temperaturePage, "cor")
+
+        maxTemperaturePage = MaxTemperatureGraphPageWidget(self, "max temperature", self.data_id, config_id)
+        self.addTab(maxTemperaturePage, "max temperature")
+
+        """
+        minTemperaturePage = MinTemperatureGraphPageWidget(self, "min temperature", self.data_id, self.data, temperature_config)
+        self.addTab(minTemperaturePage, "min temperature")
+        """
+
+        distancePage = DistanceGraphPageWidget(self, "distance", self.data_id, config_id)
+        self.addTab(distancePage, "distance")
+
+        corPage = CorGraphPageWidget(self, "cor", self.data_id, config_id)
+        corPage.addpageSignal.connect(self.addtab)
+        self.addTab(corPage, "cor")
 
     def addtab(self, obj):
         x_data = obj["x_data"]
         y_data = obj["y_data"]
         name = obj["name"]
-        widget = GraphPageWidget(self, name, self.data_id)
+        widget = GraphPageWidget(self, name, self.data_id, self.config_id)
         widget.appendData(x_data, y_data, name)
         widget.updateGraph()
         self.addTab(widget, name)
