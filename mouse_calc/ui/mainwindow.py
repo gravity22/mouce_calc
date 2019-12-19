@@ -8,8 +8,9 @@ from mouse_calc.ui.mainwidget import MainWidget
 from mouse_calc.ui.debugwidget import DebugWidget
 from mouse_calc.ui.filelistwidget import FileListWidget
 from mouse_calc.ui.statisticswidget import StatisticsWidget
-
 from mouse_calc.ui.datamanager import DataType, ErrorType, DataManager
+from mouse_calc.ui.datalistwidget import DataListWidget
+
 
 class MainWindow(QMainWindow):
     filelistWidget = None

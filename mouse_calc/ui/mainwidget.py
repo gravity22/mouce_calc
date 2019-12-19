@@ -5,9 +5,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtQuick import *
 
 from mouse_calc.lib import *
-
 from mouse_calc.ui.loadwidget import LoadWidget
 from mouse_calc.ui.graphwidget import GraphWidget
+
 
 class MainWidget(QStackedWidget):
     graphWidgets = {}
