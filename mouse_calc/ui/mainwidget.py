@@ -25,13 +25,14 @@ class MainWidget(QStackedWidget):
     def makeGraph(self, datas):
         path = datas["datapath"]
         configs = datas["configs"]
+        config_id = datas["config_id"]
         loader = Loader(path, names=[TIME, MAX_TEMPERATURE, MAX_POS_X, MAX_POS_Y, MIN_TEMPERATURE, MIN_POS_X, MIN_POS_Y])
         loader.set_preprocess(a3_preprocess)
 
         data = loader.load()
         data = calc_distance(data)
 
-        widget = GraphWidget(data, configs)
+        widget = GraphWidget(data, config_id)
         index = self.addWidget(widget)
         self.graphWidgets[path] = index
 

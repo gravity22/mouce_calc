@@ -11,17 +11,19 @@ from mouse_calc.lib import *
 from mouse_calc.ui.graphviewwidget import GraphViewWidget
 from mouse_calc.ui.calcoptioneditwidget import CalcOptionEditWidget
 from mouse_calc.ui.worker import Worker
+from mouse_calc.ui.configmanager import ConfigManager
 
 
 class GraphPageWidget(QWidget):
-    def __init__(self, parent, page_name, data_id, config={}, graphoptions={}):
+    def __init__(self, parent, page_name, data_id, config_id, graphoptions={}):
         super().__init__(parent=parent)
         self.parentwidget = parent
         self.threadpool = QThreadPool()
         self.graphoptions = graphoptions
 
         self.data_id = data_id
-        self.config = config
+        self.config_id = config_id
+        self.config = ConfigManager.get(config_id)
         self.datas = []
         self.xlim = None
         self.ylim = None
@@ -53,8 +55,9 @@ class GraphPageWidget(QWidget):
         self.graphViewWidget.zoomDecideSignal.connect(self.zoomDecideEvent)
         self.graphViewWidget.requireRedrawSignal.connect(self.updateGraph)
 
-        self.calcOptionEditWidget = CalcOptionEditWidget(self.config)
+        self.calcOptionEditWidget = CalcOptionEditWidget()
         self.calcOptionEditWidget.calcSignal.connect(self.callCalcProcess)
+        self.initCalcOptionEditWidget()
 
         self.inner_layout.addWidget(self.graphViewWidget, 4)
         self.inner_layout.addWidget(self.calcOptionEditWidget, 1)
@@ -64,6 +67,9 @@ class GraphPageWidget(QWidget):
         self.toolbar_back_action.triggered.connect(self.backLimHistory)
         self.toolbar_next_action.triggered.connect(self.nextLimHistory)
         self.toolbar_reset_action.triggered.connect(self.resetLim)
+
+    def initCalcOptionEditWidget(self):
+        pass
 
     def appendData(self, x, y, name, options={}):
         self.require_updategraph = True
@@ -169,9 +175,9 @@ class GraphPageWidget(QWidget):
         self.updateGraph()
         self.updateLimHistory()
 
-    def callCalcProcess(self, option):
-        worker = Worker(self.calcProcess, option)
+    def callCalcProcess(self):
+        worker = Worker(self.calcProcess)
         self.threadpool.start(worker)
 
-    def calcProcess(self, option, progress_callback):
+    def calcProcess(self,  progress_callback):
         pass

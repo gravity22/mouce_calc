@@ -10,17 +10,15 @@ from mouse_calc.lib import *
 
 
 class CalcOptionEditWidget(QWidget):
-    calcSignal = pyqtSignal(object)
+    calcSignal = pyqtSignal()
     resetSignal = pyqtSignal()
 
     def __init__(self, configs={}):
         super().__init__()
 
-        self.option_value = configs
-        self.init_option_value = self.option_value
-
+    def makeForms(self, configs):
         self.edit_layout = QVBoxLayout()
-        for label, data in self.option_value.items():
+        for label, data in configs.items():
             layout = QHBoxLayout()
 
             label_widget = QLabel(label)
@@ -28,26 +26,26 @@ class CalcOptionEditWidget(QWidget):
             if type(data) is QDateTime:
                 edit_widget = QDateTimeEdit(data)
                 edit_widget.setCalendarPopup(True)
-                edit_widget.dateTimeChanged.connect(lambda dt, label=label: self.option_value.update({label: dt.toPyDateTime()}))
+                edit_widget.dateTimeChanged.connect(lambda dt, label=label: configs.update({label: dt.toPyDateTime()}))
             elif type(data) is int:
                 edit_widget = QSpinBox()
                 edit_widget.setValue(data)
-                edit_widget.valueChanged.connect(lambda state, label=label: self.option_value.update({label: state}))
+                edit_widget.valueChanged.connect(lambda state, label=label: configs.update({label: state}))
             elif type(data) is float:
                 edit_widget = QDoubleSpinBox()
                 edit_widget.setValue(data)
                 edit_widget.setSingleStep(0.1)
-                edit_widget.valueChanged.connect(lambda state, label=label: self.option_value.update({label: state}))
+                edit_widget.valueChanged.connect(lambda state, label=label: configs.update({label: state}))
             elif type(data) is pd._libs.tslibs.timestamps.Timestamp:
                 data = QDateTime(data)
                 edit_widget = QDateTimeEdit(data)
                 edit_widget.setCalendarPopup(True)
-                edit_widget.dateTimeChanged.connect(lambda dt, label=label: self.option_value.update({label: dt.toPyDateTime()}))
+                edit_widget.dateTimeChanged.connect(lambda dt, label=label: configs.update({label: dt.toPyDateTime()}))
             elif type(data) is datetime.datetime:
                 data = QDateTime(data)
                 edit_widget = QDateTimeEdit(data)
                 edit_widget.setCalendarPopup(True)
-                edit_widget.dateTimeChanged.connect(lambda dt, label=label: self.option_value.update({label: dt.toPyDateTime()}))
+                edit_widget.dateTimeChanged.connect(lambda dt, label=label: configs.update({label: dt.toPyDateTime()}))
             else:
                 print(label, data, file=sys.stderr)
                 raise
@@ -68,9 +66,8 @@ class CalcOptionEditWidget(QWidget):
         self.setLayout(self.edit_layout)
 
     def callCalc(self):
-        print(self.option_value)
-        self.calcSignal.emit(self.option_value)
+        self.calcSignal.emit()
 
     def callReset(self):
         self.resetSignal.emit()
-        self.option_value = self.init_option_value
+

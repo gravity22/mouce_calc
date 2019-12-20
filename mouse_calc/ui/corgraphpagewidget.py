@@ -9,6 +9,7 @@ from PyQt5.QtQuick import *
 from mouse_calc.lib import *
 from mouse_calc.ui.graphpagewidget import GraphPageWidget
 from mouse_calc.ui.datamanager import DataType, ErrorType, DataManager
+from mouse_calc.ui.configmanager import ConfigManager
 from mouse_calc.ui.worker import Worker
 
 
@@ -16,21 +17,29 @@ class CorGraphPageWidget(GraphPageWidget):
     counter = 1
     addpageSignal = pyqtSignal(object)
 
-    def __init__(self, parent, page_name, data_id, data, config=None):
-        super().__init__(parent, page_name, data_id, config, {"graphtype": "scatter"})
-        self.data = data
+    def __init__(self, parent, page_name, data_id, config_id):
+        super().__init__(parent, page_name, data_id, config_id, {"graphtype": "scatter"})
 
         worker = Worker(self.initProcess)
         self.threadpool.start(worker)
 
+    def initCalcOptionEditWidget(self):
+        config = ConfigManager.get(self.config_id)
+        cor_config = config["cor"]
+        self.calcOptionEditWidget.makeForms(cor_config)
+
     def initProcess(self, progress_callback):
-        self.window_data = window_process(self.data, 8)
+        data = DataManager.get_data(self.data_id)
+        self.window_data = window_process(data, 8)
         x_data = np.log2(self.window_data.get_col(DISTANCE_MEAN))
         y_data = self.window_data.get_col(MAX_TEMPERATURE_MEAN)
         self.appendData(x_data, y_data, 'data', self.graphoptions)
         self.updateGraph()
 
-    def calcProcess(self, option, progress_callback):
+    def calcProcess(self, progress_callback):
+        config = ConfigManager.get(self.config_id)
+        option = config["cor"]
+
         bg_time_init = option["bg_time_init"]
         bg_time_end = option["bg_time_end"]
         tg_time_init = option["tg_time_init"]
@@ -39,8 +48,9 @@ class CorGraphPageWidget(GraphPageWidget):
         sd_num = option["sd_num"]
         error_step = option["error_step"]
 
+        data = DataManager.get_data(self.data_id)
         q = multiprocessing.Queue()
-        f = lambda: q.put(cor_process(self.data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, SD_NUM=sd_num, ERROR_STEP=error_step, save_svg=False, show_graph=False))
+        f = lambda: q.put(cor_process(data, bg_time_init, bg_time_end, tg_time_init, tg_time_end, step_size=step_size, SD_NUM=sd_num, ERROR_STEP=error_step, save_svg=False, show_graph=False))
         p = multiprocessing.Process(target=f)
         p.start()
         error_data, pb_info = q.get()
