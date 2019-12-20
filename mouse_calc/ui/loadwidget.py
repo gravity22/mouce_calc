@@ -16,50 +16,52 @@ class LoadWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.config_id = ConfigManager.default()
-        self.configs = ConfigManager.get(self.config_id)
+        configs = ConfigManager.get(self.config_id)
 
         self.innerLayout = QHBoxLayout()
         self.setLayout(self.innerLayout)
-        self.loadInfoWidget = LoadInfoWidget(self.configs)
+        self.loadInfoWidget = LoadInfoWidget(configs)
 
         self.innerLayout.addWidget(self.loadInfoWidget, 4)
 
         self.loadInfoWidget.loadButton.clicked.connect(parent.openFile)
 
     def getOptions(self):
+        configs = ConfigManager.get(self.config_id)
+
         w = self.loadInfoWidget.temperature_widgets
-        self.configs["temperature"]["bg_time_init"] = w["bg_time_init"].dateTime().toPyDateTime()
-        self.configs["temperature"]["bg_time_end"] = w["bg_time_end"].dateTime().toPyDateTime()
-        self.configs["temperature"]["tg_time_init"] = w["tg_time_init"].dateTime().toPyDateTime()
-        self.configs["temperature"]["tg_time_end"] = w["tg_time_end"].dateTime().toPyDateTime()
-        self.configs["temperature"]["step_size"] = w["step_size"].value()
-        self.configs["temperature"]["thres_sd_heat"] = w["thres_sd_heat"].value()
-        self.configs["temperature_timerange_predict"] = not (w["temperature_timerange_predict"].isChecked())
+        configs["temperature"]["bg_time_init"] = w["bg_time_init"].dateTime().toPyDateTime()
+        configs["temperature"]["bg_time_end"] = w["bg_time_end"].dateTime().toPyDateTime()
+        configs["temperature"]["tg_time_init"] = w["tg_time_init"].dateTime().toPyDateTime()
+        configs["temperature"]["tg_time_end"] = w["tg_time_end"].dateTime().toPyDateTime()
+        configs["temperature"]["step_size"] = w["step_size"].value()
+        configs["temperature"]["thres_sd_heat"] = w["thres_sd_heat"].value()
+        configs["temperature_timerange_predict"] = not (w["temperature_timerange_predict"].isChecked())
 
         w = self.loadInfoWidget.distance_widgets
-        self.configs["distance"]["bg_time_init"] = w["bg_time_init"].dateTime().toPyDateTime()
-        self.configs["distance"]["bg_time_end"] = w["bg_time_end"].dateTime().toPyDateTime()
-        self.configs["distance"]["tg_time_init"] = w["tg_time_init"].dateTime().toPyDateTime()
-        self.configs["distance"]["tg_time_end"] = w["tg_time_end"].dateTime().toPyDateTime()
-        self.configs["distance"]["step_size"] = w["step_size"].value()
-        self.configs["distance"]["welch_thres"] = w["welch_thres"].value()
-        self.configs["distance_timerange_predict"] = not (w["distance_timerange_predict"].isChecked())
+        configs["distance"]["bg_time_init"] = w["bg_time_init"].dateTime().toPyDateTime()
+        configs["distance"]["bg_time_end"] = w["bg_time_end"].dateTime().toPyDateTime()
+        configs["distance"]["tg_time_init"] = w["tg_time_init"].dateTime().toPyDateTime()
+        configs["distance"]["tg_time_end"] = w["tg_time_end"].dateTime().toPyDateTime()
+        configs["distance"]["step_size"] = w["step_size"].value()
+        configs["distance"]["welch_thres"] = w["welch_thres"].value()
+        configs["distance_timerange_predict"] = not (w["distance_timerange_predict"].isChecked())
 
         w = self.loadInfoWidget.cor_widgets
-        self.configs["cor"]["bg_time_init"] = w["bg_time_init"].dateTime().toPyDateTime()
-        self.configs["cor"]["bg_time_end"] = w["bg_time_end"].dateTime().toPyDateTime()
-        self.configs["cor"]["tg_time_init"] = w["tg_time_init"].dateTime().toPyDateTime()
-        self.configs["cor"]["tg_time_end"] = w["tg_time_end"].dateTime().toPyDateTime()
-        self.configs["cor"]["step_size"] = w["step_size"].value()
-        self.configs["cor"]["error_step"] = w["error_step"].value()
-        self.configs["cor"]["sd_num"] = w["sd_num"].value()
-        self.configs["cor_timerange_predict"] = not (w["cor_timerange_predict"].isChecked())
+        configs["cor"]["bg_time_init"] = w["bg_time_init"].dateTime().toPyDateTime()
+        configs["cor"]["bg_time_end"] = w["bg_time_end"].dateTime().toPyDateTime()
+        configs["cor"]["tg_time_init"] = w["tg_time_init"].dateTime().toPyDateTime()
+        configs["cor"]["tg_time_end"] = w["tg_time_end"].dateTime().toPyDateTime()
+        configs["cor"]["step_size"] = w["step_size"].value()
+        configs["cor"]["error_step"] = w["error_step"].value()
+        configs["cor"]["sd_num"] = w["sd_num"].value()
+        configs["cor_timerange_predict"] = not (w["cor_timerange_predict"].isChecked())
 
     def loadEvent(self):
         self.getOptions()
         datas = {}
         datas["datapath"] = self.targetpath
-        datas["configs"] = self.configs
+        datas["configs"] = ConfigManager.get(self.config_id)
         datas["config_id"] = self.config_id
         self.loadSignal.emit(datas)
 

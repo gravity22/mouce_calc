@@ -15,9 +15,9 @@ from mouse_calc.ui.configmanager import ConfigManager
 
 class MinTemperatureGraphPageWidget(GraphPageWidget):
     counter = 1
-    def __init__(self, parent, page_name, data_id, data, config=None):
+    def __init__(self, parent, page_name, data_id, config_id):
         self.data = data
-        super().__init__(parent, page_name, data_id, config)
+        super().__init__(parent, page_name, data_id, config_id)
 
         data = DataManager.get_data(self.data_id)
         x_data = data.get_col(TIME)
