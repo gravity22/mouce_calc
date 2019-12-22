@@ -1,5 +1,25 @@
 import threading
 import datetime
+import json
+
+
+def datetime_pack(obj):
+    if isintance(o, datetime.datetime):
+        return o.isoformat()
+    raise TypeError(repr(o) + " is not JSON serializable")
+
+
+def datetime_unpack(dct):
+    for k, v in dct.items():
+        if k == "bg_time_init":
+            dct[k] = datetime.datetime.fromisoformat(v)
+        if k == "bg_time_end":
+            dct[k] = datetime.datetime.fromisoformat(v)
+        if k == "tg_time_init":
+            dct[k] = datetime.datetime.fromisoformat(v)
+        if k == "tg_time_end":
+            dct[k] = datetime.datetime.fromisoformat(v)
+    return dct
 
 
 class ConfigItem(object):
@@ -94,6 +114,19 @@ class ConfigManager(object):
             raise
         cm = cls.get_instance()
         cm.__set(config_id, config)
+
+    @classmethod
+    def file_open(cls, filename):
+        f = open(filename)
+        config = json.load(f, object_hook=datetime_unpack)
+        return cls.new(config)
+
+    @classmethod
+    def file_save(cls, config_id, filename):
+        cm = cls.get_instance()
+        config = cm.__get(config_id)
+        f = open(filename)
+        json.dump(config, f, default=datetime_pack)
 
     def __append(self, item):
         self.configs.append(item)

@@ -1,3 +1,5 @@
+import datetime
+
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
@@ -25,6 +27,8 @@ class LoadWidget(QWidget):
         self.innerLayout.addWidget(self.loadInfoWidget, 4)
 
         self.loadInfoWidget.loadButton.clicked.connect(parent.openFile)
+        self.loadInfoWidget.loadConfigButton.clicked.connect(self.openConfig)
+        self.loadInfoWidget.saveConfigButton.clicked.connect(self.saveConfig)
 
     def getOptions(self):
         configs = ConfigManager.get(self.config_id)
@@ -57,6 +61,35 @@ class LoadWidget(QWidget):
         configs["cor"]["sd_num"] = w["sd_num"].value()
         configs["cor_timerange_predict"] = not (w["cor_timerange_predict"].isChecked())
 
+    def setOptions(self, config_id):
+        self.config_id = config_id
+        configs = ConfigManager.get(self.config_id)
+
+        w = self.loadInfoWidget.temperature_widgets
+        w["bg_time_init"].setDateTime(configs["temperature"]["bg_time_init"])
+        w["bg_time_end"].setDateTime(configs["temperature"]["bg_time_end"])
+        w["tg_time_init"].setDateTime(configs["temperature"]["tg_time_init"])
+        w["tg_time_end"].setDateTime(configs["temperature"]["tg_time_end"])
+        w["step_size"].setValue(configs["temperature"]["step_size"])
+        w["thres_sd_heat"].setValue(configs["temperature"]["thres_sd_heat"])
+
+        w = self.loadInfoWidget.distance_widgets
+        w["bg_time_init"].setDateTime(configs["distance"]["bg_time_init"])
+        w["bg_time_end"].setDateTime(configs["distance"]["bg_time_end"])
+        w["tg_time_init"].setDateTime(configs["distance"]["tg_time_init"])
+        w["tg_time_end"].setDateTime(configs["distance"]["tg_time_end"])
+        w["step_size"].setValue(configs["distance"]["step_size"])
+        w["welch_thres"].setValue(configs["distance"]["welch_thres"])
+
+        w = self.loadInfoWidget.cor_widgets
+        w["bg_time_init"].setDateTime(configs["cor"]["bg_time_init"])
+        w["bg_time_end"].setDateTime(configs["cor"]["bg_time_end"])
+        w["tg_time_init"].setDateTime(configs["cor"]["tg_time_init"])
+        w["tg_time_end"].setDateTime(configs["cor"]["tg_time_end"])
+        w["step_size"].setValue(configs["cor"]["step_size"])
+        w["error_step"].setValue(configs["cor"]["error_step"])
+        w["sd_num"].setValue(configs["cor"]["sd_num"])
+
     def loadEvent(self):
         self.getOptions()
         datas = {}
@@ -74,3 +107,17 @@ class LoadWidget(QWidget):
         else:
             return None
 
+    def openConfig(self):
+        (filename, kakutyousi) = QFileDialog.getOpenFileName(self, "Open Json file", "./", "JSON files (*.json)")
+        if filename:
+            config_id = ConfigManager.file_open(filename)
+            self.setOptions(config_id)
+        else:
+            return None
+
+    def saveConfig(self):
+        dialog = QFileDialog()
+        dialog.setFileMode(QFileDialog.AnyFile)
+        (filename, kakutyousi) = dialog.getSaveFileName(self, "Save Json file", "./", "JSON files (*.json)")
+        if filename:
+            ConfigManager.file_save(self.config_id, filename)
