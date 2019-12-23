@@ -55,9 +55,10 @@ class DistanceGraphPageWidget(GraphPageWidget):
 
         DataManager.append_error(self.data_id, ErrorType.DISTANCE_ERROR, error_data, option)
 
+        error_color = self.error_color_map.generate()
         x = error_data.get_col(TIME)
         y = error_data.get_col(ERROR_VALUE)
-        self.appendData(x, y, label, {"twinx": True})
+        self.appendData(x, y, label, {"twinx": True, "color": error_color})
         self.counter += 1
         self.updateGraph()
 

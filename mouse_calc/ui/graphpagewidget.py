@@ -1,6 +1,7 @@
 import sys
 from datetime import timedelta
 from abc import ABCMeta, abstractmethod
+from itertools import cycle
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -13,6 +14,14 @@ from mouse_calc.ui.graphviewwidget import GraphViewWidget
 from mouse_calc.ui.calcoptioneditwidget import CalcOptionEditWidget
 from mouse_calc.ui.worker import Worker
 from mouse_calc.ui.configmanager import ConfigManager
+
+
+class ErrorColormap(object):
+    def __init__(self):
+        self.color_list = cycle(["red", "orangered", "darkorange", "tomato", "orange", "firebrick", "crimson"])
+
+    def generate(self):
+        return self.color_list.__next__()
 
 
 class GraphPageWidget(QWidget):
@@ -38,6 +47,7 @@ class GraphPageWidget(QWidget):
         self.history_index = -1
         self.limhistory = []
         self.require_updategraph = False
+        self.error_color_map = ErrorColormap()
 
         self.toolbar = QToolBar()
         self.inner_layout = QHBoxLayout()
@@ -93,11 +103,10 @@ class GraphPageWidget(QWidget):
             self.graphViewWidget.clear()
             for name, x, y, options in self.datas:
                 graphtype = options.get("graphtype")
-                twinx = options.get("twinx")
                 if graphtype == "scatter":
-                    self.graphViewWidget.scatter(x, y, label=name, twinx=twinx)
+                    self.graphViewWidget.scatter(x, y, label=name, **options)
                 else:
-                    self.graphViewWidget.plot(x, y, label=name, twinx=twinx)
+                    self.graphViewWidget.plot(x, y, label=name, **options)
             self.require_updategraph = False
 
         if self.xlim is None:

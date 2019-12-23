@@ -97,24 +97,29 @@ class GraphViewWidget(FigureCanvas):
     def updateCanvas(self):
         self.clear()
 
-    def plot(self, x, y, label=None, twinx=False):
+    def plot(self, x, y, label=None, **option):
+        twinx = option.get("twinx")
+        color = option.get("color")
+        linestyle = option.get("linestyle")
         if twinx:
             if self.twinx is None:
                 self.twinx = self.axes.twinx()
-                self.twinx.set_zorder(-0.1)
+                self.twinx.set_zorder(0.1)
             ax = self.twinx
             self.axes.patch.set_visible(False)
         else:
             ax = self.axes
 
-        line = ax.plot(x, y, label=label)
+        line = ax.plot(x, y, label=label, color=color, linestyle=linestyle)
         if label:
             line[0].set_label(label)
             self.axes.legend()
         self.artists.append(line)
 
-    def scatter(self, x, y, label=None, twinx=False):
-        scatter = self.axes.scatter(x, y,  s=0.4)
+    def scatter(self, x, y, label=None, **option):
+        twinx = option.get('twinx')
+        marker = option.get('marker')
+        scatter = self.axes.scatter(x, y,  s=0.4, marker=marker)
         if label:
             scatter.set_label(label)
             self.axes.legend()

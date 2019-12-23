@@ -58,9 +58,10 @@ class MaxTemperatureGraphPageWidget(GraphPageWidget):
 
         DataManager.append_error(self.data_id, ErrorType.MAX_TEMPERATURE_ERROR, error_data, option)
 
+        error_color = self.error_color_map.generate()
         x = error_data.get_col(TIME)
         y = error_data.get_col(TEMPERATURE_ERROR_DATA)
-        self.appendData(x, y, label, {"twinx": True})
+        self.appendData(x, y, label, {"twinx": True, "color": error_color})
         self.updateGraph()
         self.counter += 1
 
