@@ -15,6 +15,7 @@ class CalcOptionEditWidget(QWidget):
 
     def __init__(self, configs={}):
         super().__init__()
+        self.form_widgets = {}
 
     def makeForms(self, configs):
         self.edit_layout = QVBoxLayout()
@@ -53,6 +54,7 @@ class CalcOptionEditWidget(QWidget):
             layout.addWidget(label_widget)
             layout.addWidget(edit_widget)
             self.edit_layout.addLayout(layout)
+            self.form_widgets[label] = edit_widget
 
         layout = QHBoxLayout()
         self.doButton = QPushButton("Calc")
@@ -63,7 +65,27 @@ class CalcOptionEditWidget(QWidget):
         layout.addWidget(self.resetButton)
         self.edit_layout.addLayout(layout)
 
+        layout = QHBoxLayout()
+        self.saveConfigButton = QPushButton("Save Config")
+        self.loadConfigButton = QPushButton("Load Config")
+        layout.addWidget(self.saveConfigButton)
+        layout.addWidget(self.loadConfigButton)
+        self.edit_layout.addLayout(layout)
+
         self.setLayout(self.edit_layout)
+
+    def reloadForms(self, configs):
+        for label, data in configs.items():
+            if type(data) is int:
+                self.form_widgets[label].setValue(data)
+            elif type(data) is float:
+                self.form_widgets[label].setValue(data)
+            elif type(data) is datetime.datetime or type(data) is pd._libs.tslibs.timestamps.Timestamp:
+                data = QDateTime(data)
+                self.form_widgets[label].setDateTime(data)
+            else:
+                print(label, data, type(data), file=sys.stderr)
+                raise
 
     def callCalc(self):
         self.calcSignal.emit()

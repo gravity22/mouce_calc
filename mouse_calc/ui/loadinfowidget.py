@@ -248,10 +248,15 @@ class LoadInfoWidget(QWidget):
         self.cor_group.setLayout(vbox)
         self.innerLayout.addWidget(self.cor_group, 1, 0)
 
-        self.loadButton = QPushButton("Load")
-        self.loadConfigButton = QPushButton("Config")
+        self.loadConfigButton = QPushButton("Load Config")
+        self.saveConfigButton = QPushButton("Svae Config")
         hbox = QHBoxLayout()
-        hbox.addWidget(self.loadButton)
+        hbox.addWidget(self.saveConfigButton)
         hbox.addWidget(self.loadConfigButton)
         self.innerLayout.addLayout(hbox, 2, 0)
+
+        hbox = QHBoxLayout()
+        self.loadButton = QPushButton("Load")
+        hbox.addWidget(self.loadButton)
+        self.innerLayout.addLayout(hbox, 3, 0)
 

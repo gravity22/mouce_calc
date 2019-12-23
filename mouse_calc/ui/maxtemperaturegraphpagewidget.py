@@ -33,6 +33,8 @@ class MaxTemperatureGraphPageWidget(GraphPageWidget):
         config = ConfigManager.get(self.config_id)
         temperature_config = config["temperature"]
         self.calcOptionEditWidget.makeForms(temperature_config)
+        self.calcOptionEditWidget.saveConfigButton.clicked.connect(self.saveConfig)
+        self.calcOptionEditWidget.loadConfigButton.clicked.connect(self.loadConfig)
 
     def calcProcess(self, progress_callback):
         config = ConfigManager.get(self.config_id)
@@ -62,4 +64,8 @@ class MaxTemperatureGraphPageWidget(GraphPageWidget):
         self.updateGraph()
         self.counter += 1
 
+    def reload_config(self):
+        config = ConfigManager.get(self.config_id)
+        temperature_config = config["temperature"]
+        self.calcOptionEditWidget.reloadForms(temperature_config)
 

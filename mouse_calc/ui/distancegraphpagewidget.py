@@ -24,10 +24,14 @@ class DistanceGraphPageWidget(GraphPageWidget):
         self.appendData(x_data, y_data, "data", self.graphoptions)
         self.updateGraph()
 
+        self.loadConfigSiganl.connect(self.reload_config)
+
     def initCalcOptionEditWidget(self):
         config = ConfigManager.get(self.config_id)
-        temperature_config = config["distance"]
-        self.calcOptionEditWidget.makeForms(temperature_config)
+        distance_config = config["distance"]
+        self.calcOptionEditWidget.makeForms(distance_config)
+        self.calcOptionEditWidget.saveConfigButton.clicked.connect(self.saveConfig)
+        self.calcOptionEditWidget.loadConfigButton.clicked.connect(self.loadConfig)
 
     def calcProcess(self, progress_callback):
         config = ConfigManager.get(self.config_id)
@@ -57,4 +61,7 @@ class DistanceGraphPageWidget(GraphPageWidget):
         self.counter += 1
         self.updateGraph()
 
-
+    def reload_config(self):
+        config = ConfigManager.get(self.config_id)
+        distance_config =  config["distance"]
+        self.calcOptionEditWidget.reloadForms(distance_config)
