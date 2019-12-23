@@ -15,6 +15,9 @@ from mouse_calc.ui.configmanager import ConfigManager
 
 
 class GraphPageWidget(QWidget):
+    loadConfigSiganl = pyqtSignal(int)
+    saveConfigSiganl = pyqtSignal()
+
     def __init__(self, parent, page_name, data_id, config_id, graphoptions={}):
         super().__init__(parent=parent)
         self.parentwidget = parent
@@ -68,8 +71,15 @@ class GraphPageWidget(QWidget):
         self.toolbar_next_action.triggered.connect(self.nextLimHistory)
         self.toolbar_reset_action.triggered.connect(self.resetLim)
 
+        parent.loadConfigSiganl.connect(self.reload_config)
+        self.loadConfigSiganl.connect(parent.saveConfigCallback)
+
     def initCalcOptionEditWidget(self):
+        """ virtual """
         pass
+
+    def changeConfigID(self, cid):
+        self.config_id = cid
 
     def appendData(self, x, y, name, options={}):
         self.require_updategraph = True
@@ -180,4 +190,24 @@ class GraphPageWidget(QWidget):
         self.threadpool.start(worker)
 
     def calcProcess(self,  progress_callback):
+        """ virtual """
+        pass
+
+    def saveConfig(self):
+        dialog = QFileDialog()
+        dialog.setFileMode(QFileDialog.AnyFile)
+        (filename, kakutyousi) = dialog.getSaveFileName(self, "Save Json file", "./", "JSON files (*.json)")
+        if filename:
+            ConfigManager.file_save(self.config_id, filename)
+
+    def loadConfig(self):
+        (filename, kakutyousi) = QFileDialog.getOpenFileName(self, "Open Json file", "./", "JSON files (*.json)")
+        if filename:
+            self.config_id = ConfigManager.file_open(filename)
+            self.loadConfigSiganl.emit(self.config_id)
+        else:
+            return None
+
+    def reload_config(self):
+        """ virtual """
         pass

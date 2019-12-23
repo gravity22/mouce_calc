@@ -1,10 +1,11 @@
+import sys
 import threading
 import datetime
 import json
 
 
-def datetime_pack(obj):
-    if isintance(o, datetime.datetime):
+def datetime_pack(o):
+    if isinstance(o, datetime.datetime):
         return o.isoformat()
     raise TypeError(repr(o) + " is not JSON serializable")
 
@@ -117,7 +118,7 @@ class ConfigManager(object):
 
     @classmethod
     def file_open(cls, filename):
-        f = open(filename)
+        f = open(filename, "r")
         config = json.load(f, object_hook=datetime_unpack)
         return cls.new(config)
 
@@ -125,7 +126,7 @@ class ConfigManager(object):
     def file_save(cls, config_id, filename):
         cm = cls.get_instance()
         config = cm.__get(config_id)
-        f = open(filename)
+        f = open(filename, "w")
         json.dump(config, f, default=datetime_pack)
 
     def __append(self, item):

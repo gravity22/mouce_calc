@@ -14,6 +14,7 @@ from mouse_calc.ui.configmanager import ConfigManager
 class LoadWidget(QWidget):
     targetpath = ""
     loadSignal = pyqtSignal(object)
+    saveSignal = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)

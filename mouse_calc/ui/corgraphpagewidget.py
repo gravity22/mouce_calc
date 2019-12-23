@@ -19,6 +19,7 @@ class CorGraphPageWidget(GraphPageWidget):
 
     def __init__(self, parent, page_name, data_id, config_id):
         super().__init__(parent, page_name, data_id, config_id, {"graphtype": "scatter"})
+        self.loadConfigSiganl.connect(self.reload_config)
 
         worker = Worker(self.initProcess)
         self.threadpool.start(worker)
@@ -27,6 +28,8 @@ class CorGraphPageWidget(GraphPageWidget):
         config = ConfigManager.get(self.config_id)
         cor_config = config["cor"]
         self.calcOptionEditWidget.makeForms(cor_config)
+        self.calcOptionEditWidget.saveConfigButton.clicked.connect(self.saveConfig)
+        self.calcOptionEditWidget.loadConfigButton.clicked.connect(self.loadConfig)
 
     def initProcess(self, progress_callback):
         data = DataManager.get_data(self.data_id)
@@ -86,3 +89,7 @@ class CorGraphPageWidget(GraphPageWidget):
 
         self.counter += 1
 
+    def reload_config(self):
+        config = ConfigManager.get(self.config_id)
+        cor_config = config["cor"]
+        self.calcOptionEditWidget.reloadForms(cor_config)

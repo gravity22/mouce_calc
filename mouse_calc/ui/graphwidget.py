@@ -18,13 +18,27 @@ from mouse_calc.ui.configmanager import ConfigManager
 
 
 class GraphWidget(QTabWidget):
+    loadConfigSiganl = pyqtSignal()
+    saveConfigSiganl = pyqtSignal()
+    changeConfigIDSignal = pyqtSignal(int)
+
+    @property
+    def config_id(self):
+        return self.__config_id
+
+    @config_id.setter
+    def config_id(self, config_id):
+        self.__config_id = config_id
+        self.changeConfigIDSignal.emit(config_id)
+
     def __init__(self, data, config_id):
         super().__init__()
         self.data = data
         self.data_id = DataManager.new(self.data)
         self.config_id = config_id
-        configs = ConfigManager.get(config_id)
+        self.configchange_callbacks = []
 
+        configs = ConfigManager.get(config_id)
         if configs["temperature_timerange_predict"] or configs["distance_timerange_predict"] or configs["cor_timerange_predict"]:
             time_data = data.get_col(TIME)
             min_time = min(time_data)
@@ -54,6 +68,7 @@ class GraphWidget(QTabWidget):
 
         maxTemperaturePage = MaxTemperatureGraphPageWidget(self, "max temperature", self.data_id, config_id)
         self.addTab(maxTemperaturePage, "max temperature")
+        self.changeConfigIDSignal.connect(lambda cid: maxTemperaturePage.changeConfigID(cid))
 
         """
         minTemperaturePage = MinTemperatureGraphPageWidget(self, "min temperature", self.data_id, self.data, temperature_config)
@@ -62,10 +77,12 @@ class GraphWidget(QTabWidget):
 
         distancePage = DistanceGraphPageWidget(self, "distance", self.data_id, config_id)
         self.addTab(distancePage, "distance")
+        self.changeConfigIDSignal.connect(lambda cid: distancePage.changeConfigID(cid))
 
         corPage = CorGraphPageWidget(self, "cor", self.data_id, config_id)
         corPage.addpageSignal.connect(self.addtab)
         self.addTab(corPage, "cor")
+        self.changeConfigIDSignal.connect(lambda cid: corPage.changeConfigID(cid))
 
     def addtab(self, obj):
         x_data = obj["x_data"]
@@ -76,3 +93,6 @@ class GraphWidget(QTabWidget):
         widget.updateGraph()
         self.addTab(widget, name)
 
+    def saveConfigCallback(self, config_id):
+        self.config_id = config_id
+        self.loadConfigSiganl.emit()
