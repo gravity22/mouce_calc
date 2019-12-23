@@ -1,5 +1,6 @@
 import sys
 from datetime import timedelta
+from abc import ABCMeta, abstractmethod
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -15,6 +16,8 @@ from mouse_calc.ui.configmanager import ConfigManager
 
 
 class GraphPageWidget(QWidget):
+    __metaclass__ = ABCMeta
+
     loadConfigSiganl = pyqtSignal(int)
     saveConfigSiganl = pyqtSignal()
 
@@ -74,8 +77,8 @@ class GraphPageWidget(QWidget):
         parent.loadConfigSiganl.connect(self.reload_config)
         self.loadConfigSiganl.connect(parent.saveConfigCallback)
 
+    @abstractmethod
     def initCalcOptionEditWidget(self):
-        """ virtual """
         pass
 
     def changeConfigID(self, cid):
@@ -189,8 +192,8 @@ class GraphPageWidget(QWidget):
         worker = Worker(self.calcProcess)
         self.threadpool.start(worker)
 
+    @abstractmethod
     def calcProcess(self,  progress_callback):
-        """ virtual """
         pass
 
     def saveConfig(self):
@@ -208,6 +211,6 @@ class GraphPageWidget(QWidget):
         else:
             return None
 
+    @abstractmethod
     def reload_config(self):
-        """ virtual """
         pass
