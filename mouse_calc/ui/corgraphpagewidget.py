@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtQuick import *
 
 from mouse_calc.lib import *
-from mouse_calc.ui.graphpagewidget import GraphPageWidget
+from mouse_calc.ui.graphpagewidget import GraphPageWidget, ErrorColormap
 from mouse_calc.ui.datamanager import DataType, ErrorType, DataManager
 from mouse_calc.ui.configmanager import ConfigManager
 from mouse_calc.ui.worker import Worker
@@ -70,15 +70,16 @@ class CorGraphPageWidget(GraphPageWidget):
         x = np.linspace(min(t), max(t), t.size)
 
         counter =  str(self.counter)
+        error_color = self.error_color_map.generate()
 
         y = x * slope + n
-        self.appendData(x, y, "error"+counter)
+        self.appendData(x, y, "error"+counter, {"color": error_color})
 
         y = x * slope + n_plus
-        self.appendData(x, y, "error"+counter)
+        self.appendData(x, y, "error"+counter, {"color": error_color, "linestyle": "--"})
 
         y = x * slope + n_minus
-        self.appendData(x, y, "error"+counter)
+        self.appendData(x, y, "error"+counter, {"color": error_color, "linestyle": "--"})
 
         self.updateGraph()
 
