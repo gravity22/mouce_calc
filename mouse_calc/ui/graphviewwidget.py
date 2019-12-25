@@ -1,4 +1,5 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import RectangleSelector
 from matplotlib.colors import LinearSegmentedColormap
@@ -39,6 +40,9 @@ class GraphViewWidget(FigureCanvas):
 
         self.setTitle(title)
         self.initEventCallBack()
+
+        if parent:
+            parent.toolbar = NavigationToolbar(self, parent)
 
     def initEventCallBack(self):
         self.button_press_event = None
