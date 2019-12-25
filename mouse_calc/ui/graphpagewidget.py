@@ -35,6 +35,7 @@ class GraphPageWidget(QWidget):
         self.parentwidget = parent
         self.threadpool = QThreadPool()
         self.graphoptions = graphoptions
+        self.toolbar = None
 
         self.data_id = data_id
         self.config_id = config_id
@@ -49,21 +50,7 @@ class GraphPageWidget(QWidget):
         self.require_updategraph = False
         self.error_color_map = ErrorColormap()
 
-        self.toolbar = QToolBar()
-        self.inner_layout = QHBoxLayout()
-
-        self.toolbar_select_action = self.toolbar.addAction("Select")
-        self.toolbar_zoom_action = self.toolbar.addAction("Zoom")
-        self.toolbar_back_action = self.toolbar.addAction("back")
-        self.toolbar_next_action = self.toolbar.addAction("next")
-        self.toolbar_reset_action = self.toolbar.addAction("reset")
-
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.toolbar)
-        vbox.addLayout(self.inner_layout)
-        self.setLayout(vbox)
-
-        self.graphViewWidget = GraphViewWidget(title=page_name)
+        self.graphViewWidget = GraphViewWidget(self, title=page_name)
         self.graphViewWidget.translationInitSignal.connect(self.translationInitEvent)
         self.graphViewWidget.translationSignal.connect(self.translationEvent)
         self.graphViewWidget.translationEndSiganal.connect(self.translationEndEvent)
@@ -71,19 +58,34 @@ class GraphPageWidget(QWidget):
         self.graphViewWidget.zoomDecideSignal.connect(self.zoomDecideEvent)
         self.graphViewWidget.requireRedrawSignal.connect(self.updateGraph)
 
+        self.inner_layout = QHBoxLayout()
+        if self.toolbar is None:
+            self.toolbar = QToolBar()
+
+            self.toolbar_select_action = self.toolbar.addAction("Select")
+            self.toolbar_zoom_action = self.toolbar.addAction("Zoom")
+            self.toolbar_back_action = self.toolbar.addAction("back")
+            self.toolbar_next_action = self.toolbar.addAction("next")
+            self.toolbar_reset_action = self.toolbar.addAction("reset")
+
+            self.toolbar_select_action.triggered.connect(lambda b, graphview=self.graphViewWidget: graphview.modechange("translation"))
+            self.toolbar_zoom_action.triggered.connect(lambda b, graphview=self.graphViewWidget: graphview.modechange("zoom"))
+            self.toolbar_back_action.triggered.connect(self.backLimHistory)
+            self.toolbar_next_action.triggered.connect(self.nextLimHistory)
+            self.toolbar_reset_action.triggered.connect(self.resetLim)
+
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self.toolbar)
+        vbox.addLayout(self.inner_layout)
+        self.setLayout(vbox)
+
         self.calcOptionEditWidget = CalcOptionEditWidget()
         self.calcOptionEditWidget.calcSignal.connect(self.callCalcProcess)
         self.initCalcOptionEditWidget()
 
         self.inner_layout.addWidget(self.graphViewWidget, 4)
         self.inner_layout.addWidget(self.calcOptionEditWidget, 1)
-
-        self.toolbar_select_action.triggered.connect(lambda b, graphview=self.graphViewWidget: graphview.modechange("translation"))
-        self.toolbar_zoom_action.triggered.connect(lambda b, graphview=self.graphViewWidget: graphview.modechange("zoom"))
-        self.toolbar_back_action.triggered.connect(self.backLimHistory)
-        self.toolbar_next_action.triggered.connect(self.nextLimHistory)
-        self.toolbar_reset_action.triggered.connect(self.resetLim)
-
         parent.loadConfigSiganl.connect(self.reload_config)
         self.loadConfigSiganl.connect(parent.saveConfigCallback)
 
