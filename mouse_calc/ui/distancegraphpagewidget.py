@@ -10,6 +10,7 @@ from mouse_calc.lib import *
 from mouse_calc.ui.graphpagewidget import GraphPageWidget
 from mouse_calc.ui.datamanager import DataType, ErrorType, DataManager
 from mouse_calc.ui.configmanager import ConfigManager
+from mouse_calc.ui.loadingmanager import LoadingManager, ProcessType
 from mouse_calc.ui.worker import Worker
 
 
@@ -39,6 +40,8 @@ class DistanceGraphPageWidget(GraphPageWidget):
         self.calcOptionEditWidget.loadConfigButton.clicked.connect(self.loadConfig)
 
     def calcProcess(self, progress_callback):
+        loading_id = LoadingManager.append(ProcessType.DISTANCE, self.config_id)
+
         config = ConfigManager.get(self.config_id)
         option = config["distance"]
 
@@ -66,6 +69,8 @@ class DistanceGraphPageWidget(GraphPageWidget):
         self.appendData(x, y, label, {"twinx": True, "color": error_color})
         self.counter += 1
         self.updateGraph()
+
+        LoadingManager.remove(loading_id)
 
     def reload_config(self):
         config = ConfigManager.get(self.config_id)

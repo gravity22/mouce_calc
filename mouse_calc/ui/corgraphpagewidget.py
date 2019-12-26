@@ -10,6 +10,7 @@ from mouse_calc.lib import *
 from mouse_calc.ui.graphpagewidget import GraphPageWidget, ErrorColormap
 from mouse_calc.ui.datamanager import DataType, ErrorType, DataManager
 from mouse_calc.ui.configmanager import ConfigManager
+from mouse_calc.ui.loadingmanager import LoadingManager, ProcessType
 from mouse_calc.ui.worker import Worker
 
 
@@ -40,6 +41,8 @@ class CorGraphPageWidget(GraphPageWidget):
         self.updateGraph()
 
     def calcProcess(self, progress_callback):
+        loading_id = LoadingManager.append(ProcessType.COR, self.config_id)
+
         config = ConfigManager.get(self.config_id)
         option = config["cor"]
 
@@ -87,8 +90,9 @@ class CorGraphPageWidget(GraphPageWidget):
         y_data = error_data.get_col(COR_ERROR_VALUE)
         name = "cor error"+counter
         self.addpageSignal.emit({"x_data": x_data, "y_data": y_data, "name": name})
-
         self.counter += 1
+
+        LoadingManager.remove(loading_id)
 
     def reload_config(self):
         config = ConfigManager.get(self.config_id)

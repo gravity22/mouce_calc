@@ -10,6 +10,7 @@ from mouse_calc.ui.filelistwidget import FileListWidget
 from mouse_calc.ui.statisticswidget import StatisticsWidget
 from mouse_calc.ui.datamanager import DataType, ErrorType, DataManager
 from mouse_calc.ui.datalistwidget import DataListWidget
+from mouse_calc.ui.loadingnotifywidget import LoadingNotifyWidget
 
 
 class MainWindow(QMainWindow):
@@ -50,6 +51,10 @@ class MainWindow(QMainWindow):
     def openDMWidget(self):
         self.dmwidget = DataListWidget()
         self.dmwidget.show()
+
+    def openLMWidget(self):
+        self.lmwidget = LoadingNotifyWidget()
+        self.lmwidget.show()
 
     def openMaxTemperatureStatisticsWidget(self):
         self.statisticswidget = StatisticsWidget(datatype=ErrorType.MAX_TEMPERATURE_ERROR)
@@ -126,11 +131,16 @@ class MainWindow(QMainWindow):
         openDMWidgetOpenAction.setStatusTip("Open Data Manager")
         openDMWidgetOpenAction.triggered.connect(self.openDMWidget)
 
+        openLMWidgetOpenAction = QAction("Loading information", self)
+        openLMWidgetOpenAction.setStatusTip('')
+        openLMWidgetOpenAction.triggered.connect(self.openLMWidget)
+
         windowMenu = menubar.addMenu('Window')
         windowMenu.addAction(openLoadWidgetAction)
         windowMenu.addAction(openDebugConsoleAction)
         windowMenu.addAction(openFileListWidgetAction)
         windowMenu.addAction(openDMWidgetOpenAction)
+        windowMenu.addAction(openLMWidgetOpenAction)
 
         openMaxTemperatureStatisticsWidgetAction = QAction('max temperature statistics', self)
         openMaxTemperatureStatisticsWidgetAction.setStatusTip("Open statistics")
