@@ -66,3 +66,8 @@ class LoadingManager(object):
         lm = cls.get_instance()
         for item in lm.loading_process.values():
             yield item
+
+    @classmethod
+    def connect(cls, fn):
+        lm = cls.get_instance()
+        lm.signals.updateSignal.connect(fn)

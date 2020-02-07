@@ -11,6 +11,7 @@ from mouse_calc.ui.statisticswidget import StatisticsWidget
 from mouse_calc.ui.datamanager import DataType, ErrorType, DataManager
 from mouse_calc.ui.datalistwidget import DataListWidget
 from mouse_calc.ui.loadingnotifywidget import LoadingNotifyWidget
+from mouse_calc.ui.statusbar import StatusBar
 
 
 class MainWindow(QMainWindow):
@@ -22,6 +23,9 @@ class MainWindow(QMainWindow):
 
         self.initUI()
         self.threadpool = QThreadPool()
+
+        self.statusBar = StatusBar()
+        self.setStatusBar(self.statusBar)
 
     def initUI(self):
         self.initMenuBar()
