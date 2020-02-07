@@ -24,16 +24,20 @@ class MainWindow(QMainWindow):
         self.initUI()
         self.threadpool = QThreadPool()
 
-        self.statusBar = StatusBar()
-        self.setStatusBar(self.statusBar)
-
     def initUI(self):
         self.initMenuBar()
 
-        self.mainWidget = MainWidget(self)
-        self.setCentralWidget(self.mainWidget)
+        self.centralWidget = QSplitter()
+        self.centralWidget.setOrientation(Qt.Vertical)
 
-        self.openDebugWidget()
+        self.mainWidget = MainWidget(self)
+        self.centralWidget.addWidget(self.mainWidget)
+
+        self.statusBar = StatusBar()
+        self.centralWidget.addWidget(self.statusBar)
+
+        self.setCentralWidget(self.centralWidget)
+
         self.openFileListWidget()
 
     def openDebugWidget(self):

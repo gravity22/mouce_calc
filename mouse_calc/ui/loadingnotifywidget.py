@@ -33,11 +33,11 @@ class Item(QListWidgetItem):
         self.configs = config
 
         if processtype is ProcessType.MAX_TEMPERATURE:
-            self.setText("max_temperature process")
+            self.setText("最高温度")
         elif processtype is ProcessType.DISTANCE:
-            self.setText("distance process")
+            self.setText("距離")
         elif processtype is ProcessType.COR:
-            self.setText("cor process")
+            self.setText("発熱行動相関")
 
 
 class OptionViewWidget(QWidget):
@@ -66,20 +66,34 @@ class OptionViewWidget(QWidget):
             layout.addWidget(label_widget)
             layout.addWidget(data_widget)
             self.inner_layout.addLayout(layout)
-
         self.update(self.rect())
 
 
-class LoadingNotifyWidget(QWidget):
+class LoadingNotifyWidget(QSplitter):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.inner_layout = QHBoxLayout()
 
+        self.leftWidget = QWidget()
+        self.leftLayout = QVBoxLayout()
+        self.leftWidget.setLayout(self.leftLayout)
+        self.leftLayoutName = QLabel("計算中プロセス")
         self.listWidget = QListWidget()
+        self.leftLayout.addWidget(self.leftLayoutName)
+        self.leftLayout.addWidget(self.listWidget)
+
+        self.rightWidget = QWidget()
+        self.rightLayout = QVBoxLayout()
+        self.rightWidget.setLayout(self.rightLayout)
+        self.rightLayoutName = QLabel("詳細")
+        self.rightLayoutName.setAlignment(Qt.AlignTop)
+        self.rightLayoutName.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Minimum)
         self.optionViewWidget = OptionViewWidget()
-        self.inner_layout.addWidget(self.listWidget)
-        self.inner_layout.addWidget(self.optionViewWidget)
-        self.setLayout(self.inner_layout)
+        self.rightLayout.addWidget(self.rightLayoutName)
+        self.rightLayout.addWidget(self.optionViewWidget)
+        self.rightLayout.addStretch()
+
+        self.addWidget(self.leftWidget)
+        self.addWidget(self.rightWidget)
 
         LoadingManager.connect(self.updateView)
         self.listWidget.itemClicked.connect(self.changeActiveItem)

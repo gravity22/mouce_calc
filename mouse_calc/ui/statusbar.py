@@ -9,5 +9,5 @@ from mouse_calc.ui.loadingnotifywidget import LoadingNotifyWidget
 class StatusBar(QStatusBar):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.inner_widget = LoadingNotifyWidget()
-        self.addWidget(self.inner_widget)
+        self.loading_notify_widget = LoadingNotifyWidget()
+        self.addWidget(self.loading_notify_widget)
