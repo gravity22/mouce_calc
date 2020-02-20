@@ -4,7 +4,6 @@ import multiprocessing
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtQuick import *
 
@@ -37,6 +36,8 @@ class ErrorItem(object):
 
 
 class DataItem(object):
+    _lock = threading.Lock()
+
     def __init__(self, data_id, data, option={}):
         self.id = data_id
         self.data = data
@@ -49,8 +50,9 @@ class DataItem(object):
         self.distance_rep_error_id = None
 
     def append_error(self, error_type, error_data, error_config):
-        error_id = self.__error_id_counter
-        self.__error_id_counter += 1
+        with self._lock: 
+            error_id = self.__error_id_counter
+            self.__error_id_counter += 1
 
         error_item = ErrorItem(error_id, error_type, error_data, error_config)
         self.errors.append(error_item)
@@ -76,14 +78,16 @@ class DataItem(object):
                 yield error
 
     def get(self, error_id):
+        if error_id is None:
+            return None
         return self.errors[error_id]
 
     def get_reps(self):
         ret = {}
-        ret["max_temperature"] = self.get(self.max_temperature_rep_error_id) if self.max_temperature_rep_error_id else None
-        ret["min_temperature"] = self.get(self.min_temperature_rep_error_id) if self.min_temperature_rep_error_id else None
-        ret["distance"] = self.get(self.distance_rep_error_id) if self.distance_rep_error_id else None
-        ret["cor"] = self.get(self.cor_rep_error_id) if self.cor_rep_error_id else None
+        ret["max_temperature"] = self.get(self.max_temperature_rep_error_id)
+        ret["min_temperature"] = self.get(self.min_temperature_rep_error_id)
+        ret["distance"] = self.get(self.distance_rep_error_id)
+        ret["cor"] = self.get(self.cor_rep_error_id)
         return ret
 
 
