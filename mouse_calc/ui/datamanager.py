@@ -139,6 +139,15 @@ class DataManager(object):
         return item.data
 
     @classmethod
+    def get_reps(cls, data_id):
+        dm = cls.get_instance()
+        item = dm.__get(data_id)
+        if item:
+            return item.get_reps()
+        else:
+            return None
+
+    @classmethod
     def set(cls, data_id, data):
         raise
 
