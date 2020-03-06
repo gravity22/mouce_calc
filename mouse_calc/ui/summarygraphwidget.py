@@ -12,11 +12,12 @@ from mouse_calc.ui.allcalculation import AllCalculation
 
 
 class SummaryGraphWidget(QWidget):
-    def __init__(self, data_id, control_data_id=None, config_id=None):
+    def __init__(self, data_id, control_data_id=None, config_id=None, linewidth=0.3):
         super().__init__()
         self.data_id = data_id
         self.control_data_id = control_data_id
         self.config_id = config_id
+        self.linewidth = linewidth
         self.inner_layout = QVBoxLayout()
         self.setLayout(self.inner_layout)
 
@@ -39,38 +40,38 @@ class SummaryGraphWidget(QWidget):
 
         x_data = data.get_col(TIME)
         y_data = data.get_col(MAX_TEMPERATURE)
-        self.graphViewWidget.plot(x_data, y_data, row=0, color="gray", linewidth=0.2)
+        self.graphViewWidget.plot(x_data, y_data, row=0, color="gray", linewidth=self.linewidth)
         
         x_data = data.get_col(TIME)
         y_data = data.get_col(DISTANCE)
-        self.graphViewWidget.plot(x_data, y_data, row=0, color="gray", linewidth=0.2, twinx=True)
+        self.graphViewWidget.plot(x_data, y_data, row=0, color="gray", linewidth=self.linewidth, twinx=True)
 
         x_data = data.get_col(TIME)
         y_data = data.get_col(MAX_TEMPERATURE)
-        self.graphViewWidget.plot(x_data, y_data, row=1, color="orange", linewidth=0.2)
+        self.graphViewWidget.plot(x_data, y_data, row=1, color="orange", linewidth=self.linewidth)
 
         x_data = temperature_error.data.get_col(TIME)
         y_data = temperature_error.data.get_col(TEMPERATURE_ERROR_DATA)
-        self.graphViewWidget.plot(x_data, y_data, row=1, color="red", linewidth=0.2, twinx=True)
+        self.graphViewWidget.plot(x_data, y_data, row=1, color="red", linewidth=self.linewidth, twinx=True)
 
         x_data = data.get_col(TIME)
         y_data = data.get_col(DISTANCE)
-        self.graphViewWidget.plot(x_data, y_data, row=2, color="g", linewidth=0.2)
+        self.graphViewWidget.plot(x_data, y_data, row=2, color="g", linewidth=self.linewidth)
 
         x_data = distance_error.data.get_col(TIME)
         y_data = distance_error.data.get_col(ERROR_VALUE)
-        self.graphViewWidget.plot(x_data, y_data, row=2, color="red", linewidth=0.2, twinx=True)
+        self.graphViewWidget.plot(x_data, y_data, row=2, color="red", linewidth=self.linewidth, twinx=True)
 
         x_data = data.get_col(TIME)
         y_data = data.get_col(MAX_TEMPERATURE)
-        self.graphViewWidget.plot(x_data, y_data, row=3, color="orange", linewidth=0.2)
+        self.graphViewWidget.plot(x_data, y_data, row=3, color="orange", linewidth=self.linewidth)
 
         x_data = data.get_col(TIME)
         y_data = data.get_col(DISTANCE)
-        self.graphViewWidget.plot(x_data, y_data, row=3, color="green", linewidth=0.2)
+        self.graphViewWidget.plot(x_data, y_data, row=3, color="green", linewidth=self.linewidth)
 
         x_data = cor_error.data.get_col(TIME)
         y_data = cor_error.data.get_col(COR_ERROR_VALUE)
-        self.graphViewWidget.plot(x_data, y_data, row=3, color="red", linewidth=0.2, twinx=True)
+        self.graphViewWidget.plot(x_data, y_data, row=3, color="red", linewidth=self.linewidth, twinx=True)
 
 
