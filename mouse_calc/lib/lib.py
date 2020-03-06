@@ -359,7 +359,7 @@ def temperature_process(data, bg_init_time, bg_end_time, tg_init_time, tg_end_ti
 
     return (error_data, temperature_error_data)
 
-def distance_process(data, bg_init_time, bg_end_time, tg_init_time, tg_end_time, step_size=8, welch_thres=0.5, show_graph=False, save_svg=True, svg_filepath="distance.svg"):
+def distance_process(data, bg_init_time, bg_end_time, tg_init_time, tg_end_time, step_size=8, welch_thres=0.01, show_graph=False, save_svg=True, svg_filepath="distance.svg"):
     print("bg_init_time", bg_init_time)
     print("bg_end_time",  bg_end_time)
     print("tg_init_time", tg_init_time)
