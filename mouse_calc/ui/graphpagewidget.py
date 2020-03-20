@@ -5,7 +5,6 @@ from itertools import cycle
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtQuick import *
 
@@ -59,21 +58,6 @@ class GraphPageWidget(QWidget):
         self.graphViewWidget.requireRedrawSignal.connect(self.updateGraph)
 
         self.inner_layout = QHBoxLayout()
-        if self.toolbar is None:
-            self.toolbar = QToolBar()
-
-            self.toolbar_select_action = self.toolbar.addAction("Select")
-            self.toolbar_zoom_action = self.toolbar.addAction("Zoom")
-            self.toolbar_back_action = self.toolbar.addAction("back")
-            self.toolbar_next_action = self.toolbar.addAction("next")
-            self.toolbar_reset_action = self.toolbar.addAction("reset")
-
-            self.toolbar_select_action.triggered.connect(lambda b, graphview=self.graphViewWidget: graphview.modechange("translation"))
-            self.toolbar_zoom_action.triggered.connect(lambda b, graphview=self.graphViewWidget: graphview.modechange("zoom"))
-            self.toolbar_back_action.triggered.connect(self.backLimHistory)
-            self.toolbar_next_action.triggered.connect(self.nextLimHistory)
-            self.toolbar_reset_action.triggered.connect(self.resetLim)
-
 
         vbox = QVBoxLayout()
         vbox.addWidget(self.toolbar)
