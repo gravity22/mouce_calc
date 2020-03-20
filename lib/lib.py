@@ -359,7 +359,7 @@ def temperature_process(data, bg_init_time, bg_end_time, tg_init_time, tg_end_ti
 
     return (error_data, temperature_error_data)
 
-def distance_process(data, bg_init_time, bg_end_time, tg_init_time, tg_end_time, step_size=8, welch_thres=0.01, show_graph=False, save_svg=True, svg_filepath="distance.svg"):
+def distance_process(data, bg_init_time, bg_end_time, tg_init_time, tg_end_time, step_size=8, welch_thres=0.5, show_graph=False, save_svg=True, svg_filepath="distance.svg"):
     print("bg_init_time", bg_init_time)
     print("bg_end_time",  bg_end_time)
     print("tg_init_time", tg_init_time)
@@ -464,17 +464,30 @@ def passing_bablock(x_data, y_data, multi_thread=False):
     ng_count = 0
     pb_list = []
 
-    for i, j in itertools.combinations(range(n), 2):
-        if np.isnan(x_data[i] - x_data[j]):
-            pass
-        elif i<j and x_data[i]-x_data[j] != 0.0:
-            slope = (y_data[i]-y_data[j]) / (x_data[i]-x_data[j])
-            if slope is not np.nan:
+    if multi_thread:
+        # FIXME: bug don't working
+        def calc(itr):
+            x1, y1 = itr[0]
+            x2, y2 = itr[1]
+            #print(x1, y2, x2, y2)
+            if x1-x2 == 0:
+                return -1
+            slope = (y2 - y1)/(x2 - x1)
+            return slope
+
+        with ProcessPoolExecutor(max_workers=2) as excutor:
+            print('executor')
+            g = (((x_data[i], y_data[i]), (x_data[j], y_data[j])) for i, j in itertools.combinations(range(n), 2))
+            res = excutor.map(calc, g)
+    else:
+        for i, j in itertools.combinations(range(n), 2):
+            if i<j and x_data[i]-x_data[j] != 0:
+                slope = (y_data[i]-y_data[j]) / (x_data[i]-x_data[j])
                 pb_list.append(slope)
                 if slope < -1:
                     ng_count += 1
-        else:
-            pass
+            else:
+                pass
 
     shift = ng_count
     pb_list.sort()
@@ -510,11 +523,9 @@ def cor_process(data, bg_init_time, bg_end_time, tg_init_time, tg_end_time, step
     tg = data_window.query(timerange_to_query(tg_init_time, tg_end_time))
 
     bg_distance = np.log2(bg.get_col(DISTANCE_MEAN))
-    bg_distance = bg_distance.replace(-np.inf, 1/step_size)
     bg_temperature = bg.get_col(MAX_TEMPERATURE_MEAN)
 
     tg_distance = np.log2(tg.get_col(DISTANCE_MEAN))
-    tg_distance = tg_distance.replace(-np.inf, 1/step_size)
     tg_temperature = tg.get_col(MAX_TEMPERATURE_MEAN)
 
     slope, sec, upper, lower = passing_bablock(bg_distance, bg_temperature)
