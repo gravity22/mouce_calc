@@ -5,6 +5,7 @@ from mouse_calc.lib import *
 from mouse_calc.ui.datamanager import DataType, ErrorType, DataManager
 from mouse_calc.ui.configmanager import ConfigManager
 
+MAX_WORKERS = None # if None, use all cpu core
 
 class AllCalculation():
     def __init__(self, data_ids=[], control_data_id=None, config_id=None):
@@ -31,7 +32,7 @@ class AllCalculation():
         future_list = []
         self.results = None
 
-        with futures.ProcessPoolExecutor(max_workers=4) as executor:
+        with futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
             config = ConfigManager.get(self.config_id)
 
             if self.control_data_id is not None:
